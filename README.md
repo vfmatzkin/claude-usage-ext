@@ -44,13 +44,13 @@ Add to `~/.claude/settings.json`:
 - **5h rate limit** — `time_until_reset:used%` format, color-coded by usage
 - **7d rate limit** — same format, cyan
 
-All fields are optional — if data isn't available yet, the section is skipped.
+All fields are optional — if data isn't available yet, the section is skipped. Rate limit data only appears after a full message exchange (send + response), since Claude Code updates the statusline on each render using the API response headers.
 
 ## Pace arrows
 
 Each rate limit shows a pace arrow based on projected usage at reset time:
 
-- `↑` red — burning fast, will hit the limit before reset. Followed by time-to-limit, colored by urgency relative to the window (red < 33%, orange < 66%, green otherwise)
+- `↑` red — burning fast, will exhaust the limit before reset. Followed by the estimated time until you hit 100% (e.g. `↑ 2h` = limit reached in ~2 hours). Color reflects urgency: red if under 33% of the window remains, orange under 66%, green otherwise
 - `→` yellow — on pace, roughly at 100% by reset
 - `↓` green — under-consuming, won't hit the limit
 
