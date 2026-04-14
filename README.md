@@ -6,9 +6,13 @@ A bash script that formats Claude Code's [statusline JSON](https://code.claude.c
 
 Model, git branch, context window %, 5h and 7d rate limits with pace indicators.
 
+On API/enterprise plans (no `rate_limits` in the JSON), the script shows session cost, burn rate, cache hit rate, cost per 1k tokens, net lines changed, and budget tracking across sessions.
+
+![screenshot-api](screenshot-api-v2.png)
+
 ## Background
 
-Claude Code pipes a JSON object to a shell command via stdin on every render (the [`statusLine` config](https://code.claude.com/docs/en/statusline)). On Pro/Max plans this JSON includes a `rate_limits` field with 5-hour and 7-day usage percentages and reset times.
+Claude Code pipes a JSON object to a shell command via stdin on every render (the [`statusLine` config](https://code.claude.com/docs/en/statusline)). On Pro/Max plans this JSON includes a `rate_limits` field with 5-hour and 7-day usage percentages and reset times. On API/enterprise plans that field is absent, but `cost` data (session spend, API duration, lines changed) is available.
 
 This script parses that JSON with `jq`. Single bash file, no extra dependencies. Visual style inspired by [isaacaudet/claude-code-statusline](https://github.com/isaacaudet/claude-code-statusline).
 
@@ -34,15 +38,59 @@ Add to `~/.claude/settings.json`:
 - Claude Code CLI
 - `jq` (`brew install jq`)
 - `bc` (usually pre-installed)
-- Claude Pro or Max subscription (rate limits are not available on free/API plans)
+- Claude Pro, Max, or API/enterprise plan
 
 ## What it shows
 
+### Pro/Max plans
+
 - **Model** — color-coded by family: amber (Opus), cyan (Haiku), blue (Sonnet)
 - **Git branch** — magenta, with `⎇` prefix
-- **Context window %** — cyan under 50%, orange 50–80%, red above 80%
+- **Context window %** — cyan under 50%, orange 50-80%, red above 80%
 - **5h rate limit** — `time_until_reset:used%` format, color-coded by usage
 - **7d rate limit** — same format, cyan
+
+### API/enterprise plans
+
+When `rate_limits` is absent, the script shows cost metrics instead. Example: `$2.13 71.00/hr │ cache 96% │ $.02/kt +196 │ $34.63/50 12m`
+
+- **Session cost** — `$2.13`, total cost of the current conversation
+- **Active burn rate** — `71.00/hr`, dollars per hour of API time (not wall clock, so idle time doesn't skew it)
+- **Cache hit rate** — `cache 96%`, percentage of cached input tokens vs newly created ones. Green above 80%, cyan 50-80%, orange below. High cache rates mean you're paying ~10% per token instead of full price for repeated context
+- **Cost per 1k tokens** — `$.02/kt`, session cost divided by total tokens (input + output). Captures all work, not just lines changed
+- **Net lines** — `+196`, lines added minus removed. Green if positive, red if negative
+- **Budget** — `$34.63/50 12m`, accumulated spend across sessions vs budget, with estimated time remaining at current burn rate
+
+### Budget tracking (API plans)
+
+Each session's cost is persisted to `$CLAUDE_CONFIG_DIR/usage/` (or `~/.claude/usage/`). To track spend against a budget, create a config file:
+
+```bash
+mkdir -p ~/.claude/usage
+cat > ~/.claude/usage/.config << EOF
+budget=50
+initial_usage=32.50
+start_ts=$(date +%s)
+EOF
+```
+
+- `budget` — total budget in dollars
+- `initial_usage` — spend already consumed before tracking started
+- `start_ts` — epoch timestamp, only sessions after this are counted
+
+Color-coded: cyan under 50%, yellow 50-80%, red above 80%. Time remaining is based on the current session's active burn rate.
+
+#### Syncing with the web console
+
+The script tracks cost locally using `total_cost_usd` from the statusline JSON, which can drift from the billed amount on the web console. To re-sync:
+
+```bash
+bash statusline-command.sh sync 215.09
+```
+
+This sets `initial_usage` to the real value and writes negative offsets for existing sessions so continuing sessions only count the delta from this point.
+
+### Common fields
 
 All fields are optional — if data isn't available yet, the section is skipped. Rate limit data only appears after a full message exchange (send + response), since Claude Code updates the statusline on each render using the API response headers.
 
