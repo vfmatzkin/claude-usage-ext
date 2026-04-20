@@ -5,6 +5,24 @@ set -f
 
 usage_dir="${CLAUDE_USAGE_DIR:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/usage}"
 
+# budget subcommand: bash statusline-command.sh budget <new_budget>
+# Updates the budget= line in .config.
+if [ "${1:-}" = "budget" ] && [ -n "${2:-}" ]; then
+    [ ! -f "$usage_dir/.config" ] && echo "no config at $usage_dir/.config" && exit 1
+    sed -i '' "s/^budget=.*/budget=$2/" "$usage_dir/.config"
+    cat "$usage_dir/.config"
+    exit 0
+fi
+
+# usage subcommand: bash statusline-command.sh usage <initial_usage>
+# Directly overwrites initial_usage= in .config (no offset files written).
+if [ "${1:-}" = "usage" ] && [ -n "${2:-}" ]; then
+    [ ! -f "$usage_dir/.config" ] && echo "no config at $usage_dir/.config" && exit 1
+    sed -i '' "s/^initial_usage=.*/initial_usage=$2/" "$usage_dir/.config"
+    cat "$usage_dir/.config"
+    exit 0
+fi
+
 # sync subcommand: bash statusline-command.sh sync <real_usage>
 # Writes a negative offset for each session so continuing sessions only
 # count the delta. Dead sessions cancel out (cost + -cost = 0).

@@ -82,13 +82,20 @@ Color-coded: cyan under 50%, yellow 50-80%, red above 80%. Time remaining is bas
 
 #### Syncing with the web console
 
-The script tracks cost locally using `total_cost_usd` from the statusline JSON, which can drift from the billed amount on the web console. To re-sync:
+The script tracks cost locally using `total_cost_usd` from the statusline JSON, which can drift from the billed amount on the web console. To re-sync, set `initial_usage` to the real value and move `start_ts` to now so existing session files (already counted in the billed amount) aren't double-summed:
+
+```bash
+bash statusline-command.sh usage 215.09
+sed -i '' "s/^start_ts=.*/start_ts=$(date +%s)/" ~/.claude/usage/.config
+```
+
+Alternatively, use the `sync` subcommand which writes negative offsets for existing sessions instead of using timestamp filtering:
 
 ```bash
 bash statusline-command.sh sync 215.09
 ```
 
-This sets `initial_usage` to the real value and writes negative offsets for existing sessions so continuing sessions only count the delta from this point.
+If you're using Claude Code, a `/set-budget` slash command is available in `.claude/commands/set-budget.md` — copy it to `~/.claude/commands/` to use it from any project.
 
 ### Common fields
 
