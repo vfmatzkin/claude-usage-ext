@@ -75,10 +75,11 @@ pace_arrow() {
     [ -z "$used_pct" ] || [ -z "$resets_at" ] && return
     local elapsed=$(( now - (resets_at - duration) ))
     [ "$elapsed" -le $(( duration / 50 )) ] && return
-    local projected
+    local projected pace_pct
     projected=$(echo "$used_pct * $duration / $elapsed" | bc 2>/dev/null)
+    pace_pct=$(echo "$elapsed * 100 / $duration" | bc 2>/dev/null)
     [ -z "$projected" ] && return
-    local time_left_m remaining_m time_color time_left_fmt arrow_str
+    local time_left_m remaining_m time_color time_left_fmt arrow_str pace_str
     time_left_m=$(echo "(100 - $used_pct) * $elapsed / $used_pct / 60" | bc 2>/dev/null)
     remaining_m=$(( (resets_at - now) / 60 ))
 
@@ -98,7 +99,10 @@ pace_arrow() {
     else                                 arrow_str="${green}↓${reset}"; time_left_fmt=""
     fi
 
-    printf "${arrow_str}${time_left_fmt}"
+    pace_str=""
+    [ -n "$pace_pct" ] && pace_str=":${dim}${pace_pct}%${reset}"
+
+    printf '%s' "${pace_str}${arrow_str}${time_left_fmt}"
 }
 
 add() { [ -z "$out" ] && out+="$1" || out+="${sep}$1"; }
@@ -210,6 +214,18 @@ if [ -n "$rl_seven" ]; then
         add "${cyan}${t7}:${s}%${arrow7}${reset}"
     else
         add "${cyan}7d:${s}%${arrow7}${reset}"
+    fi
+fi
+
+# Cache hit rate — also shown alongside rate limits
+if [ -n "$rl_five" ] || [ -n "$rl_seven" ]; then
+    cache_total=$(( ${cache_read:-0} + ${cache_create:-0} ))
+    if [ "$cache_total" -gt 0 ] 2>/dev/null; then
+        hit_pct=$(( cache_read * 100 / cache_total ))
+        if   [ "$hit_pct" -ge 80 ]; then cache_color="$green"
+        elif [ "$hit_pct" -ge 50 ]; then cache_color="$cyan"
+        else cache_color="$orange"; fi
+        add "${dim}cache${reset} ${cache_color}${hit_pct}%${reset}"
     fi
 fi
 
