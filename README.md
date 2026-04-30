@@ -47,8 +47,9 @@ Add to `~/.claude/settings.json`:
 - **Model** — color-coded by family: amber (Opus), cyan (Haiku), blue (Sonnet)
 - **Git branch** — magenta, with `⎇` prefix
 - **Context window %** — cyan under 50%, orange 50-80%, red above 80%
-- **5h rate limit** — `time_until_reset:used%` format, color-coded by usage
+- **5h rate limit** — `time_until_reset:used%:elapsed%↓` format, color-coded by usage
 - **7d rate limit** — same format, cyan
+- **Cache hit rate** — `cache 99%`, ratio of cached input tokens to total. Green ≥80%, cyan ≥50%, orange below
 
 ### API/enterprise plans
 
@@ -103,7 +104,9 @@ All fields are optional — if data isn't available yet, the section is skipped.
 
 ## Pace arrows
 
-Each rate limit shows a pace arrow based on projected usage at reset time:
+Each rate limit reads `time_until_reset:used%:elapsed%↓`. The middle figure is how far through the window you are; comparing it to `used%` tells you whether you're under or over pace at a glance (e.g. `17m:8%:94%↓` = 17m left, 8% used, 94% through the window, well under pace).
+
+The arrow projects usage at reset time:
 
 - `↑` red — burning fast, will exhaust the limit before reset. Followed by the estimated time until you hit 100% (e.g. `↑ 2h` = limit reached in ~2 hours). Color reflects urgency: red if under 33% of the window remains, orange under 66%, green otherwise
 - `→` yellow — on pace, roughly at 100% by reset
