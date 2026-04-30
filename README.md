@@ -47,7 +47,7 @@ Add to `~/.claude/settings.json`:
 - **Model** — color-coded by family: amber (Opus), cyan (Haiku), blue (Sonnet)
 - **Git branch** — magenta, with `⎇` prefix
 - **Context window %** — cyan under 50%, orange 50-80%, red above 80%
-- **5h rate limit** — `time_until_reset:used%:elapsed%↓` format, color-coded by usage
+- **5h rate limit** — `time_until_reset:used%:on_pace%↓` format, color-coded by usage
 - **7d rate limit** — same format, cyan
 - **Cache hit rate** — `cache 99%`, ratio of cached input tokens to total. Green ≥80%, cyan ≥50%, orange below
 
@@ -104,7 +104,10 @@ All fields are optional — if data isn't available yet, the section is skipped.
 
 ## Pace arrows
 
-Each rate limit reads `time_until_reset:used%:elapsed%↓`. The middle figure is how far through the window you are; comparing it to `used%` tells you whether you're under or over pace at a glance (e.g. `17m:8%:94%↓` = 17m left, 8% used, 94% through the window, well under pace).
+Each rate limit reads `time_until_reset:used%:on_pace%↓`. The third figure is the reference: it's the `used%` you'd need to be at right now to land at exactly 100% by reset. Compare it against the second figure to see your margin at a glance.
+
+- `17m:8%:94%↓` — 17m until reset, 8% used, you'd need to be at 94% to be on perfect pace. Tons of headroom.
+- `17m:94%:8%↑` — flipped: 94% used with only 8% of the window elapsed. You're cooked.
 
 The arrow projects usage at reset time:
 
